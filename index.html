@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Keuangan Offline</title>
+<link rel="manifest" href="manifest.json">
+    <!-- Menggunakan Tailwind CSS CDN agar tampilan langsung rapi -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans p-6">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Catatan Keuangan Offline</h1>
+            <p class="text-gray-600">Mencatat penghasilan & pengeluaran tanpa internet</p>
+        </header>
+
+        <!-- GRID UTAMA -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- FORM INPUT (Kiri) -->
+            <div class="bg-white p-6 rounded-lg shadow-md md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Transaksi</h2>
+                <form id="form-transaksi" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Tanggal</label>
+                        <input type="date" id="tanggal" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Jenis</label>
+                        <select id="jenis" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="masuk">Penghasilan (Masuk)</option>
+                            <option value="keluar">Pengeluaran (Keluar)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Jumlah (Rp)</label>
+                        <input type="number" id="jumlah" placeholder="Contoh: 50000" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Kategori</label>
+                        <input type="text" id="kategori" placeholder="Gaji, Makanan, Liburan..." required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Keterangan</label>
+                        <textarea id="keterangan" rows="3" placeholder="Detail transaksi..." class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 font-semibold transition duration-200">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- TABEL LAPORAN (Kanan) -->
+            <div class="bg-white p-6 rounded-lg shadow-md md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Riwayat Transaksi</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-700 text-left text-sm uppercase font-semibold">
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Jenis</th>
+                                <th class="p-3">Jumlah</th>
+                                <th class="p-3">Kategori</th>
+                                <th class="p-3">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-body" class="text-gray-600 text-sm">
+                            <!-- Data dari database offline akan muncul di sini secara dinamis -->
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="p-3" colspan="5 text-center text-gray-400">Belum ada data transaksi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Keuangan Offline</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+</head>
+<body class="bg-gray-100 font-sans p-6">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Catatan Keuangan Offline</h1>
+            <p class="text-gray-600">Mencatat penghasilan & pengeluaran tanpa internet</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="bg-white p-6 rounded-lg shadow-md md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Transaksi</h2>
+                <form id="form-transaksi" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Tanggal</label>
+                        <input type="date" id="tanggal" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Jenis</label>
+                        <select id="jenis" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="masuk">Penghasilan (Masuk)</option>
+                            <option value="keluar">Pengeluaran (Keluar)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Jumlah (Rp)</label>
+                        <input type="number" id="jumlah" placeholder="Contoh: 50000" required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Kategori</label>
+                        <input type="text" id="kategori" placeholder="Gaji, Makanan, Dagang..." required class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Keterangan</label>
+                        <textarea id="keterangan" rows="3" placeholder="Detail transaksi..." class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 font-semibold transition duration-200">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Riwayat Transaksi</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-700 text-left text-sm uppercase font-semibold">
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Jenis</th>
+                                <th class="p-3">Jumlah</th>
+                                <th class="p-3">Kategori</th>
+                                <th class="p-3">Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-body" class="text-gray-600 text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. Membuat/Membuka Database di Browser bernama 'KeuanganOfflineDB'
+        const db = new Dexie("KeuanganOfflineDB");
+        db.version(1).stores({
+            transaksi: '++id, tanggal, jenis, jumlah, kategori, keterangan'
+        });
+
+        // REfERENSI ELEMEN HTML
+        const form = document.getElementById('form-transaksi');
+        const tabelBody = document.getElementById('tabel-body');
+
+        // 2. Fungsi Menampilkan Data dari Database ke Tabel HTML
+        async function tampilkanData() {
+            // Ambil semua data dari database diurutkan berdasarkan id terbaru
+            const semuaTransaksi = await db.transaksi.reverse().toArray();
+            
+            // Bersihkan tabel sebelum diisi data baru
+            tabelBody.innerHTML = '';
+
+            if (semuaTransaksi.length === 0) {
+                tabelBody.innerHTML = `
+                    <tr class="border-b border-gray-200">
+                        <td class="p-3 text-center text-gray-400" colspan="5">Belum ada data transaksi.</td>
+                    </tr>`;
+                return;
+            }
+
+            // Looping data untuk dimasukkan ke baris tabel
+            semuaTransaksi.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-200 hover:bg-gray-50";
+                
+                // Beri warna pembeda untuk Masuk (Hijau) dan Keluar (Merah)
+                const warnaJenis = item.jenis === 'masuk' ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
+                const teksJenis = item.jenis === 'masuk' ? 'Masuk' : 'Keluar';
+
+                tr.innerHTML = `
+                    <td class="p-3">${item.tanggal}</td>
+                    <td class="p-3 ${warnaJenis}">${teksJenis}</td>
+                    <td class="p-3 font-semibold">Rp ${Number(item.jumlah).toLocaleString('id-ID')}</td>
+                    <td class="p-3"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">${item.kategori}</span></td>
+                    <td class="p-3 text-gray-500">${item.keterangan || '-'}</td>
+                `;
+                tabelBody.appendChild(tr);
+            });
+        }
+
+        // 3. Event Listener saat Form di-Submit (Tombol Simpan diklik)
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Mencegah reload halaman
+
+            // Ambil nilai dari input form
+            const tanggal = document.getElementById('tanggal').value;
+            const jenis = document.getElementById('jenis').value;
+            const jumlah = document.getElementById('jumlah').value;
+            const kategori = document.getElementById('kategori').value;
+            const keterangan = document.getElementById('keterangan').value;
+
+            // Masukkan data ke database offline (IndexedDB)
+            await db.transaksi.add({
+                tanggal,
+                jenis,
+                jumlah: Number(jumlah),
+                kategori,
+                keterangan
+            });
+
+            // Reset form input setelah simpan
+            form.reset();
+
+            // Perbarui tampilan tabel laporan
+            tampilkanData();
+        });
+
+        // Jalankan fungsi tampilkan data saat halaman pertama kali dibuka
+        tampilkanData();
+    </script>
+</body>
+</html>
+// Mendaftarkan Service Worker agar fitur PWA aktif
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker terdaftar!', reg))
+            .catch(err => console.error('Gagal mendaftarkan Service Worker', err));
+    });
+}
+</body>
+</html>
