@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Keuangan Offline</title>
+    <title>Aplikasi Keuangan Offline dengan Profil</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -14,6 +14,15 @@
         <header class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-gray-800">Catatan Keuangan Offline</h1>
             <p class="text-gray-600">Mencatat penghasilan & pengeluaran tanpa internet</p>
+            
+            <div class="mt-4 inline-flex items-center bg-blue-50 border border-blue-200 px-4 py-2 rounded-full shadow-sm">
+                <span class="text-sm font-medium text-gray-600 mr-2">Profil Aktif:</span>
+                <select id="select-profil" class="bg-transparent text-blue-700 font-bold focus:outline-none cursor-pointer">
+                    </select>
+                <button id="btn-tambah-profil" class="ml-3 text-xs bg-blue-600 text-white px-2 py-1 rounded-full hover:bg-blue-700 transition font-semibold">
+                    + Profil Baru
+                </button>
+            </div>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -78,38 +87,96 @@
     </div>
 
     <script>
-        // 1. Membuat/Membuka Database di Browser bernama 'KeuanganOfflineDB'
+        // 1. Inisialisasi Database dengan struktur baru yang mendukung kolom 'profil'
         const db = new Dexie("KeuanganOfflineDB");
-        db.version(1).stores({
-            transaksi: '++id, tanggal, jenis, jumlah, kategori, keterangan'
+        db.version(2).stores({
+            transaksi: '++id, profil, tanggal, jenis, jumlah, kategori, keterangan',
+            profil: 'nama' // Tabel khusus untuk menyimpan daftar nama akun/profil
         });
 
         // REFERENSI ELEMEN HTML
         const form = document.getElementById('form-transaksi');
         const tabelBody = document.getElementById('tabel-body');
+        const selectProfil = document.getElementById('select-profil');
+        const btnTambahProfil = document.getElementById('btn-tambah-profil');
 
-        // 2. Fungsi Menampilkan Data dari Database ke Tabel HTML
-        async function tampilkanData() {
-            // Ambil semua data dari database diurutkan berdasarkan id terbaru
-            const semuaTransaksi = await db.transaksi.reverse().toArray();
+        let profilAktif = "";
+
+        // 2. Mengatur Sistem Akun / Profil
+        async function inisialisasiProfil() {
+            const daftarProfil = await db.profil.toArray();
+
+            // Jika database benar-benar kosong belum ada profil sama sekali, buat profil default
+            if (daftarProfil.length === 0) {
+                await db.profil.add({ nama: "Utama" });
+                profilAktif = "Utama";
+            } else {
+                profilAktif = daftarProfil[0].nama;
+            }
+
+            muatPilihanProfil();
+        }
+
+        async function muatPilihanProfil() {
+            const daftarProfil = await db.profil.toArray();
+            selectProfil.innerHTML = "";
             
-            // Bersihkan tabel sebelum diisi data baru
+            daftarProfil.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.nama;
+                opt.textContent = p.nama;
+                if (p.nama === profilAktif) opt.selected = true;
+                selectProfil.appendChild(opt);
+            });
+
+            tampilkanData();
+        }
+
+        // Event saat tombol "+ Profil Baru" diklik
+        btnTambahProfil.addEventListener('click', async () => {
+            const namaBaru = prompt("Masukkan nama akun/profil baru:");
+            if (namaBaru && namaBaru.trim() !== "") {
+                const cekEksis = await db.profil.get(namaBaru.trim());
+                if (cekEksis) {
+                    alert("Nama profil sudah digunakan!");
+                    return;
+                }
+                await db.profil.add({ nama: namaBaru.trim() });
+                profilAktif = namaBaru.trim();
+                muatPilihanProfil();
+            }
+        });
+
+        // Event saat pengguna mengganti pilihan akun di dropdown
+        selectProfil.addEventListener('change', (e) => {
+            profilAktif = e.target.value;
+            tampilkanData();
+        });
+
+
+        // 3. Fungsi Menampilkan Data Berdasarkan Profil yang Aktif
+        async function tampilkanData() {
+            // Memfilter data transaksi yang HANYA memiliki nilai 'profil' sesuai profilAktif
+            const semuaTransaksi = await db.transaksi
+                .where('profil')
+                .equals(profilAktif)
+                .reverse()
+                .toArray();
+            
             tabelBody.innerHTML = '';
 
             if (semuaTransaksi.length === 0) {
                 tabelBody.innerHTML = `
                     <tr class="border-b border-gray-200">
-                        <td class="p-3 text-center text-gray-400" colspan="5">Belum ada data transaksi.</td>
+                        <td class="p-3 text-center text-gray-400" colspan="5">Belum ada data transaksi untuk profil ini.</td>
                     </tr>`;
                 return;
             }
 
-            // Looping data untuk dimasukkan ke baris tabel
             semuaTransaksi.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-gray-200 hover:bg-gray-50";
                 
-                // Beri warna pembeda untuk Masuk (Hijau) dan Keluar (Merah)
                 const warnaJenis = item.jenis === 'masuk' ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
                 const teksJenis = item.jenis === 'masuk' ? 'Masuk' : 'Keluar';
 
@@ -124,19 +191,19 @@
             });
         }
 
-        // 3. Event Listener saat Form di-Submit (Tombol Simpan diklik)
+        // 4. Event Listener saat Menyimpan Transaksi
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Mencegah reload halaman
+            e.preventDefault();
 
-            // Ambil nilai dari input form
             const tanggal = document.getElementById('tanggal').value;
             const jenis = document.getElementById('jenis').value;
             const jumlah = document.getElementById('jumlah').value;
             const kategori = document.getElementById('kategori').value;
             const keterangan = document.getElementById('keterangan').value;
 
-            // Masukkan data ke database offline (IndexedDB)
+            // Menyimpan transaksi lengkap dengan label 'profil' nya
             await db.transaksi.add({
+                profil: profilAktif,
                 tanggal,
                 jenis,
                 jumlah: Number(jumlah),
@@ -144,17 +211,14 @@
                 keterangan
             });
 
-            // Reset form input setelah simpan
             form.reset();
-
-            // Perbarui tampilan tabel laporan
             tampilkanData();
         });
 
-        // Jalankan fungsi tampilkan data saat halaman pertama kali dibuka
-        tampilkanData();
+        // Jalankan alur profil dan data saat pertama dibuka
+        inisialisasiProfil();
 
-        // 4. Mendaftarkan Service Worker agar fitur PWA aktif
+        // 5. Mendaftarkan Service Worker agar fitur PWA aktif
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
